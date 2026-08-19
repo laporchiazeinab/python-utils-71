@@ -1,36 +1,21 @@
-import json
 import os
 
-DEFAULT_CONFIG = {
-    'click_interval': 0.1,
-    'max_clicks': 100,
-    'click_button': 'left',
-}
+class Config:
+    def __init__(self):
+        self.click_interval = 0.1  # Interval between clicks
+        self.click_duration = 10    # Duration to click
+        self.click_button = 'left'   # Which mouse button to click
+        self.output_file = 'click_log.txt'  # Log file for clicks
+        self.load_env_variables()  # Load any overriding settings
 
-class ConfigLoader:
-    def __init__(self, config_file='config.json'):
-        self.config_file = config_file
-        self.config = self.load_config()
+    def load_env_variables(self):
+        # Override the config with environment variables if they exist
+        self.click_interval = float(os.getenv('CLICK_INTERVAL', self.click_interval))
+        self.click_duration = int(os.getenv('CLICK_DURATION', self.click_duration))
+        self.click_button = os.getenv('CLICK_BUTTON', self.click_button)
+        self.output_file = os.getenv('OUTPUT_FILE', self.output_file)
 
-    def load_config(self):
-        if os.path.isfile(self.config_file):
-            with open(self.config_file, 'r') as file:
-                config_data = json.load(file)
-            return {**DEFAULT_CONFIG, **config_data}
-        else:
-            return DEFAULT_CONFIG
+    def __str__(self):
+        return f'Config(click_interval={self.click_interval}, click_duration={self.click_duration}, click_button={self.click_button}, output_file={self.output_file})'
 
-    def get(self, key, default=None):
-        return self.config.get(key, default)
-
-    def set(self, key, value):
-        self.config[key] = value
-        self.save_config()
-
-    def save_config(self):
-        with open(self.config_file, 'w') as file:
-            json.dump(self.config, file, indent=4)
-
-# Example of usage:
-# loader = ConfigLoader()
-# print(loader.get('click_interval'))
+config = Config()
