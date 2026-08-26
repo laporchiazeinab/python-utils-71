@@ -1,21 +1,44 @@
+import json
 import os
 
-class Config:
-    def __init__(self):
-        self.click_interval = 0.1  # Interval between clicks
-        self.click_duration = 10    # Duration to click
-        self.click_button = 'left'   # Which mouse button to click
-        self.output_file = 'click_log.txt'  # Log file for clicks
-        self.load_env_variables()  # Load any overriding settings
+DEFAULT_CONFIG = {
+    "cps": 10,
+    "hotkey": "f6",
+    "button": "left",
+    "hold_time": 0.05,
+    "sound_enabled": False
+}
 
-    def load_env_variables(self):
-        # Override the config with environment variables if they exist
-        self.click_interval = float(os.getenv('CLICK_INTERVAL', self.click_interval))
-        self.click_duration = int(os.getenv('CLICK_DURATION', self.click_duration))
-        self.click_button = os.getenv('CLICK_BUTTON', self.click_button)
-        self.output_file = os.getenv('OUTPUT_FILE', self.output_file)
+class ConfigLoader:
+    def __init__(self, filepath="config.json"):
+        self.filepath = filepath
+        self.config = DEFAULT_CONFIG.copy()
+        self.load()
 
-    def __str__(self):
-        return f'Config(click_interval={self.click_interval}, click_duration={self.click_duration}, click_button={self.click_button}, output_file={self.output_file})'
+    def load(self):
+        """Load configuration from file or create with defaults if missing."""
+        if os.path.exists(self.filepath):
+            try:
+                with open(self.filepath, "r") as f:
+                    user_config = json.load(f)
+                    self.config.update(user_config)
+            except (json.JSONDecodeError, IOError):
+                # Fallback to defaults on corrupt file
+                self.save()
+        else:
+            self.save()
 
-config = Config()
+    def save(self):
+        """Save current configuration to disk."""
+        try:
+            with open(self.filepath, "w") as f:
+                json.dump(self.config, f, indent=4)
+        except IOError:
+            pass
+
+    def get(self, key):
+        return self.config.get(key, DEFAULT_CONFIG.get(key))
+
+    def set(self, key, value):
+        self.config[key] = value
+        self.save()
