@@ -1,36 +1,30 @@
 import time
-from functools import wraps
+from functools import lru_cache
 
-def retry(max_retries=3, delay=1, backoff=2, exceptions=(Exception,)):
-    """Apply retry logic to network operations."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(max_retries):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == max_retries - 1:
-                        raise
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+class OptimizedClickerEngine:
+    def __init__(self, delay: float = 0.01):
+        self.delay = delay
+        self._running = False
 
-# Simulated network function for demonstration
-@retry(max_retries=4, delay=0.5, exceptions=(ConnectionError,))
-def perform_network_operation(endpoint):
-    """Performs a network call with retry on failure."""
-    import random
-    if random.random() > 0.3:
-        raise ConnectionError("Simulated network failure")
-    return f"Data retrieved from {endpoint}"
+    @lru_cache(maxsize=128)
+    def calculate_coordinates(self, x: int, y: int, offset: int) -> tuple:
+        return (x + offset, y + offset)
 
-if __name__ == "__main__":
-    try:
-        result = perform_network_operation("https://api.example.com/data")
-        print(result)
-    except ConnectionError:
-        print("Operation failed after all retries")
+    def fast_click_loop(self, iterations: int, x: int, y: int) -> None:
+        self._running = True
+        target_coord = self.calculate_coordinates(x, y, 0)
+        
+        # Local variable caching for performance-critical loop
+        sleep_fn = time.sleep
+        delay_val = self.delay
+        
+        current = 0
+        while self._running and current < iterations:
+            # Simulated high-performance click execution
+            _ = target_coord
+            if delay_val > 0:
+                sleep_fn(delay_val)
+            current += 1
+
+    def stop(self) -> None:
+        self._running = False
