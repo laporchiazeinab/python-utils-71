@@ -1,44 +1,39 @@
-import json
-import os
+from typing import Dict, Any, Optional
 
-DEFAULT_CONFIG = {
-    "cps": 10,
-    "hotkey": "f6",
-    "button": "left",
-    "hold_time": 0.05,
-    "sound_enabled": False
-}
+class Config:
+    """Manages configuration settings for the autoclicker."""
 
-class ConfigLoader:
-    def __init__(self, filepath="config.json"):
-        self.filepath = filepath
-        self.config = DEFAULT_CONFIG.copy()
-        self.load()
+    def __init__(self) -> None:
+        self._settings: Dict[str, Any] = {
+            "interval": 0.1,
+            "button": "left",
+            "enabled": False
+        }
 
-    def load(self):
-        """Load configuration from file or create with defaults if missing."""
-        if os.path.exists(self.filepath):
-            try:
-                with open(self.filepath, "r") as f:
-                    user_config = json.load(f)
-                    self.config.update(user_config)
-            except (json.JSONDecodeError, IOError):
-                # Fallback to defaults on corrupt file
-                self.save()
-        else:
-            self.save()
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
+        """Retrieve a setting value by key."""
+        return self._settings.get(key, default)
 
-    def save(self):
-        """Save current configuration to disk."""
-        try:
-            with open(self.filepath, "w") as f:
-                json.dump(self.config, f, indent=4)
-        except IOError:
-            pass
+    def update(self, key: str, value: Any) -> None:
+        """Update a specific configuration setting."""
+        self._settings[key] = value
 
-    def get(self, key):
-        return self.config.get(key, DEFAULT_CONFIG.get(key))
+    @property
+    def interval(self) -> float:
+        """Get click interval in seconds."""
+        return float(self._settings.get("interval", 0.1))
 
-    def set(self, key, value):
-        self.config[key] = value
-        self.save()
+    @interval.setter
+    def interval(self, value: float) -> None:
+        """Set click interval with basic validation."""
+        if value < 0.01:
+            value = 0.01
+        self._settings["interval"] = value
+
+    def reset(self) -> None:
+        """Reset configuration to default values."""
+        self._settings = {
+            "interval": 0.1,
+            "button": "left",
+            "enabled": False
+        }
