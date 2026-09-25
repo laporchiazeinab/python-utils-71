@@ -1,28 +1,39 @@
 import time
-import random
+import threading
 
-class AutoClicker:
-    def __init__(self, click_interval, click_times):
-        self.click_interval = click_interval
-        self.click_times = click_times
+class ClickerController:
+    """Handles autoclicker state and timing logic."""
+    def __init__(self, interval=0.1):
+        self.interval = interval
+        self.running = False
+        self._lock = threading.Lock()
 
-    def validate_inputs(self):
-        if not isinstance(self.click_interval, (int, float)) or self.click_interval <= 0:
-            raise ValueError('Click interval must be a positive number.')
-        if not isinstance(self.click_times, int) or self.click_times < 1:
-            raise ValueError('Click times must be a positive integer.')
+    def start(self):
+        with self._lock:
+            self.running = True
 
-    def start_clicking(self):
-        self.validate_inputs()
-        for _ in range(self.click_times):
-            self.perform_click()
-            time.sleep(self.click_interval)
+    def stop(self):
+        with self._lock:
+            self.running = False
 
-    def perform_click(self):
-        # Simulate a mouse click
-        print('Mouse clicked.')
+    def execute_click(self, action_func):
+        """Runs the provided action while controller is active."""
+        while True:
+            with self._lock:
+                if not self.running:
+                    break
+            action_func()
+            time.sleep(self.interval)
 
-# Example usage
-if __name__ == '__main__':
-    clicker = AutoClicker(0.5, 10)
-    clicker.start_clicking()
+class InputValidator:
+    """Validates autoclicker configuration parameters."""
+    @staticmethod
+    def validate_interval(value):
+        if not isinstance(value, (int, float)) or value < 0.01:
+            raise ValueError("Interval must be a float greater than 0.01")
+        return True
+
+def format_duration(seconds):
+    """Converts seconds into human-readable minute/second format."""
+    mins, secs = divmod(int(seconds), 60)
+    return f"{mins:02d}m {secs:02d}s"
