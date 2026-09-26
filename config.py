@@ -1,39 +1,48 @@
-from typing import Dict, Any, Optional
+import json
+import os
+from typing import Any, Dict
 
-class Config:
-    """Manages configuration settings for the autoclicker."""
+DEFAULT_CONFIG = {
+    "delay": 0.1,          # delay between clicks in seconds
+    "button": "left",      # 'left', 'right', 'middle'
+    "click_type": "single",# 'single', 'double'
+    "hotkey_start": "f6",  # start clicking hotkey
+    "hotkey_stop": "f7"    # stop clicking hotkey
+}
 
-    def __init__(self) -> None:
-        self._settings: Dict[str, Any] = {
-            "interval": 0.1,
-            "button": "left",
-            "enabled": False
-        }
+class ConfigLoader:
+    def __init__(self, filepath: str = "config.json"):
+        self.filepath = filepath
+        self.config = self.load_config()
 
-    def get(self, key: str, default: Optional[Any] = None) -> Any:
-        """Retrieve a setting value by key."""
-        return self._settings.get(key, default)
+    def load_config(self) -> Dict[str, Any]:
+        """Loads configuration from JSON file or creates it with defaults."""
+        if not os.path.exists(self.filepath):
+            self._save_defaults()
+            return DEFAULT_CONFIG.copy()
 
-    def update(self, key: str, value: Any) -> None:
-        """Update a specific configuration setting."""
-        self._settings[key] = value
+        try:
+            with open(self.filepath, "r") as f:
+                user_config = json.load(f)
+            
+            # Merge user config with defaults to handle missing keys and type safety
+            config = DEFAULT_CONFIG.copy()
+            for key, value in user_config.items():
+                if key in DEFAULT_CONFIG and isinstance(value, type(DEFAULT_CONFIG[key])):
+                    config[key] = value
+            return config
+        except (json.JSONDecodeError, IOError):
+            # Fallback to default config on parse or read errors
+            return DEFAULT_CONFIG.copy()
 
-    @property
-    def interval(self) -> float:
-        """Get click interval in seconds."""
-        return float(self._settings.get("interval", 0.1))
+    def _save_defaults(self) -> None:
+        """Saves default configuration to disk to guide the user."""
+        try:
+            with open(self.filepath, "w") as f:
+                json.dump(DEFAULT_CONFIG, f, indent=4)
+        except IOError:
+            pass
 
-    @interval.setter
-    def interval(self, value: float) -> None:
-        """Set click interval with basic validation."""
-        if value < 0.01:
-            value = 0.01
-        self._settings["interval"] = value
-
-    def reset(self) -> None:
-        """Reset configuration to default values."""
-        self._settings = {
-            "interval": 0.1,
-            "button": "left",
-            "enabled": False
-        }
+    def get(self, key: str) -> Any:
+        """Retrieve a configuration value by key with safe fallback."""
+        return self.config.get(key, DEFAULT_CONFIG.get(key))
