@@ -1,39 +1,38 @@
+import random
 import time
-import threading
+from typing import Tuple, Union
 
-class ClickerController:
-    """Handles autoclicker state and timing logic."""
-    def __init__(self, interval=0.1):
-        self.interval = interval
-        self.running = False
-        self._lock = threading.Lock()
 
-    def start(self):
-        with self._lock:
-            self.running = True
+def apply_jitter(x: int, y: int, max_offset: int = 5) -> Tuple[int, int]:
+    """Applies human-like random jitter to target coordinates to prevent bot detection."""
+    if max_offset <= 0:
+        return x, y
+    offset_x = random.randint(-max_offset, max_offset)
+    offset_y = random.randint(-max_offset, max_offset)
+    return x + offset_x, y + offset_y
 
-    def stop(self):
-        with self._lock:
-            self.running = False
 
-    def execute_click(self, action_func):
-        """Runs the provided action while controller is active."""
-        while True:
-            with self._lock:
-                if not self.running:
-                    break
-            action_func()
-            time.sleep(self.interval)
+def get_humanized_delay(base_delay: float, variance_ratio: float = 0.15) -> float:
+    """Calculates a dynamic delay by adding a small randomized variance to a base time."""
+    if base_delay <= 0:
+        return 0.0
+    variance = base_delay * max(0.0, min(variance_ratio, 1.0))
+    return max(0.001, random.uniform(base_delay - variance, base_delay + variance))
 
-class InputValidator:
-    """Validates autoclicker configuration parameters."""
-    @staticmethod
-    def validate_interval(value):
-        if not isinstance(value, (int, float)) or value < 0.01:
-            raise ValueError("Interval must be a float greater than 0.01")
-        return True
 
-def format_duration(seconds):
-    """Converts seconds into human-readable minute/second format."""
-    mins, secs = divmod(int(seconds), 60)
-    return f"{mins:02d}m {secs:02d}s"
+def parse_coordinates(coords_str: str) -> Union[Tuple[int, int], None]:
+    """Parses coordinate strings like '1920, 1080' or '1920 1080' safely into integers."""
+    cleaned = coords_str.replace(",", " ").strip()
+    parts = [part for part in cleaned.split(" ") if part]
+    if len(parts) == 2:
+        try:
+            return int(parts[0]), int(parts[1])
+        except ValueError:
+            return None
+    return None
+
+
+def sleep_humanized(base_delay: float) -> None:
+    """Blocks thread execution using a randomized, human-like delay duration."""
+    actual_delay = get_humanized_delay(base_delay)
+    time.sleep(actual_delay)
