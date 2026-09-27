@@ -1,30 +1,34 @@
 import time
-from functools import lru_cache
+import functools
+import logging
+from typing import Callable, Any
 
-class OptimizedClickerEngine:
-    def __init__(self, delay: float = 0.01):
-        self.delay = delay
-        self._running = False
+# Configure logger for autoclicker networking
+logger = logging.getLogger('python-utils-71')
 
-    @lru_cache(maxsize=128)
-    def calculate_coordinates(self, x: int, y: int, offset: int) -> tuple:
-        return (x + offset, y + offset)
+def retry_operation(retries: int = 3, delay: float = 1.0):
+    """Decorator to retry network operations on failure."""
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            last_exception = None
+            for attempt in range(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt + 1} failed: {e}")
+                    if attempt < retries - 1:
+                        time.sleep(delay)
+            logger.error(f"Operation failed after {retries} attempts")
+            raise last_exception
+        return wrapper
+    return decorator
 
-    def fast_click_loop(self, iterations: int, x: int, y: int) -> None:
-        self._running = True
-        target_coord = self.calculate_coordinates(x, y, 0)
-        
-        # Local variable caching for performance-critical loop
-        sleep_fn = time.sleep
-        delay_val = self.delay
-        
-        current = 0
-        while self._running and current < iterations:
-            # Simulated high-performance click execution
-            _ = target_coord
-            if delay_val > 0:
-                sleep_fn(delay_val)
-            current += 1
-
-    def stop(self) -> None:
-        self._running = False
+@retry_operation(retries=3, delay=2.0)
+def fetch_server_config(url: str):
+    """Example network call for autoclicker settings."""
+    # Simulating request logic
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=5) as response:
+        return response.read().decode('utf-8')
