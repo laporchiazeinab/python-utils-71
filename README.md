@@ -1,36 +1,54 @@
-# python-utils-71: AutoClicker
+# python-utils-71
 
-Python Utils 71 is a versatile and efficient autoclicker designed to automate repetitive clicking tasks with customizable options. Built in Python, this tool provides users with a straightforward interface for managing click frequency and duration, making it perfect for both casual and advanced users.
+A high-performance, cross-platform autoclicker library and CLI tool built with Python. Designed for automation tasks, testing, and repetitive workflows, it provides low-latency input simulation with minimal resource overhead.
 
 ## Features
 
-- **Custom Click Rate**: Set the click rate with precision, allowing you to adjust the interval between clicks in milliseconds.
-- **Flexible Targeting**: Choose to click at specific screen coordinates or let the application focus on the currently active window.
-- **Hotkey Activation**: Start and stop clicking with user-defined hotkeys, giving you full control without switching windows.
-- **Pause and Resume**: Easily pause and resume clicking action, ensuring that you maintain control over the automation process.
+*   **Precision Control:** Configurable click intervals (milliseconds) and mouse button selection (left, right, middle).
+*   **Dynamic Targeting:** Supports both coordinate-based clicking and instant "follow-cursor" automation modes.
+*   **Safety Interlocks:** Includes an emergency keyboard hotkey to instantly kill automation processes if needed.
+*   **Cross-Platform:** Built on top of `pynput` for seamless operation across Windows, macOS, and Linux.
 
 ## Installation
 
-To install the required libraries and set up the autoclicker, run the following commands in your terminal:
+Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
 
 ```bash
-git clone https://github.com/yourusername/python-utils-71.git
+git clone https://github.com/Developer/python-utils-71.git
 cd python-utils-71
 pip install -r requirements.txt
 ```
 
-## Basic Usage Example
+## Usage
 
-Once installed, you can launch the autoclicker by running:
+You can run the autoclicker directly via the command line or import it into your own scripts.
 
+### CLI Execution
+Run the script with default settings (100ms interval):
 ```bash
-python autoclicker.py
+python main.py --interval 100 --button left
 ```
 
-Configure your click settings in the terminal and use the designated hotkeys (`F8` to start, `F9` to stop) to control the autoclicking functionality while you work on other tasks.
+### Python API Example
+```python
+from utils import AutoClicker
+
+# Initialize with a 50ms delay
+bot = AutoClicker(interval=0.05)
+
+# Start clicking at the current cursor position
+bot.start()
+
+# Stop after 10 seconds
+import time
+time.sleep(10)
+bot.stop()
+```
+
+## Contributing
+Contributions are welcome! Please open an issue to discuss major changes before submitting a pull request. Ensure all new code passes existing unit tests.
 
 ## License
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
