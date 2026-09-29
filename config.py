@@ -1,37 +1,32 @@
+from typing import Dict, Any, Optional
 import json
-import os
-from typing import Any, Dict
 
-DEFAULT_CONFIG = {
-    "interval": 0.1,
-    "button": "left",
-    "repeat": 0,
-    "hotkey": "f8"
-}
+class ConfigManager:
+    """Handles loading and saving of autoclicker settings."""
 
-def load_config(filepath: str = "config.json") -> Dict[str, Any]:
-    """
-    Loads configuration from JSON file with fallback to defaults.
-    Returns a dictionary of validated application settings.
-    """
-    config = DEFAULT_CONFIG.copy()
+    def __init__(self, filepath: str = "settings.json") -> None:
+        self.filepath: str = filepath
+        self.settings: Dict[str, Any] = {
+            "interval": 0.1,
+            "button": "left",
+            "hotkey": "f6"
+        }
 
-    if os.path.exists(filepath):
+    def load_config(self) -> Dict[str, Any]:
+        """Reads configuration from a JSON file."""
         try:
-            with open(filepath, "r") as f:
-                user_config = json.load(f)
-                config.update(user_config)
-        except (json.JSONDecodeError, IOError) as e:
-            print(f"Failed to load {filepath}: {e}. Using defaults.")
-            
-    return config
+            with open(self.filepath, "r") as f:
+                self.settings.update(json.load(f))
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+        return self.settings
 
-def save_config(config: Dict[str, Any], filepath: str = "config.json") -> None:
-    """
-    Saves current configuration state to a JSON file.
-    """
-    try:
-        with open(filepath, "w") as f:
-            json.dump(config, f, indent=4)
-    except IOError as e:
-        print(f"Failed to save {filepath}: {e}")
+    def save_config(self, new_settings: Dict[str, Any]) -> None:
+        """Persists updated configuration to disk."""
+        self.settings.update(new_settings)
+        with open(self.filepath, "w") as f:
+            json.dump(self.settings, f, indent=4)
+
+    def get_setting(self, key: str, default: Optional[Any] = None) -> Any:
+        """Retrieves a specific setting value."""
+        return self.settings.get(key, default)
