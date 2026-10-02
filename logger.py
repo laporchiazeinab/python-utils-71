@@ -1,34 +1,40 @@
 import logging
 import os
-from logging.handlers import RotatingFileHandler
+from datetime import datetime
 
-def setup_logger(name: str, log_file: str = 'app.log'):
-    """
-    Configures a logger with rotation to manage autoclicker log growth.
-    """
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+# Configure logger for autoclicker runtime tracking
+logger = logging.getLogger('autoclicker')
+logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if logger is re-initialized
-    if not logger.handlers:
-        # Format: timestamp - name - level - message
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler = logging.FileHandler('app.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
-        # File rotation: 5MB per file, max 3 files
-        file_handler = RotatingFileHandler(
-            log_file, 
-            maxBytes=5*1024*1024, 
-            backupCount=3
-        )
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+def safe_log_action(message: str):
+    """Logs user actions with filesystem boundary checks."""
+    try:
+        if not isinstance(message, str):
+            raise ValueError('Log message must be a string')
+        
+        # Verify log directory integrity
+        if not os.path.exists('app.log') and not os.access('.', os.W_OK):
+            print(f'CRITICAL: Cannot write log to disk: {message}')
+            return
+        
+        logger.info(message)
+    except (OSError, ValueError) as e:
+        # Fail silently to avoid interrupting click loop
+        print(f'Logger failure: {e}')
 
-        # Stream handler for console output
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-    return logger
-
-# Initialize default logger instance for project usage
-autoclicker_logger = setup_logger('autoclicker_71')
+def log_exception(exc: Exception):
+    """Formats and records exceptions for debug persistence."""
+    timestamp = datetime.now().isoformat()
+    error_msg = f'[{timestamp}] CRITICAL ERROR: {type(exc).__name__} - {str(exc)}'
+    
+    try:
+        with open('error.log', 'a') as f:
+            f.write(error_msg + '\n')
+    except Exception:
+        # Last-resort console fallback for critical disk errors
+        print(f'Fatal error logger failure: {error_msg}')
