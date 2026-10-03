@@ -1,33 +1,40 @@
-import logging
 import time
+import urllib.request
+import urllib.error
+import json
+import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger('processor')
+logger = logging.getLogger("autoclicker.processor")
 
-def validate_inputs(clicks: int, interval: float) -> bool:
-    """Ensures click count and interval are positive values."""
-    if not isinstance(clicks, int) or clicks <= 0:
-        logger.error(f'Invalid click count: {clicks}')
-        return False
-    if not isinstance(interval, (int, float)) or interval < 0.01:
-        logger.error(f'Invalid interval: {interval}')
-        return False
-    return True
+class NetworkProcessor:
+    """Handles network requests for autoclicker configurations with retry logic."""
 
-def run_autoclicker(clicks: int, interval: float):
-    """Main processing loop with input validation."""
-    if not validate_inputs(clicks, interval):
-        return
+    def __init__(self, max_retries: int = 3, backoff_factor: float = 2.0):
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
 
-    logger.info(f'Starting {clicks} clicks with {interval}s delay')
-    
-    try:
-        for i in range(clicks):
-            # Simulating click event
-            logger.info(f'Performing click {i + 1}/{clicks}')
-            time.sleep(interval)
-    except KeyboardInterrupt:
-        logger.info('Processing interrupted by user')
-
-if __name__ == '__main__':
-    run_autoclicker(5, 0.5)
+    def fetch_remote_profile(self, url: str) -> dict:
+        """
+        Retrieves a clicking coordinate profile configuration from a remote endpoint.
+        Applies exponential backoff for handling intermittent connection failures.
+        """
+        delay = 1.0
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "Autoclicker-Processor/1.0"}
+                )
+                with urllib.request.urlopen(req, timeout=5.0) as response:
+                    if response.status == 200:
+                        return json.loads(response.read().decode("utf-8"))
+            except (urllib.error.URLError, urllib.error.HTTPError) as err:
+                logger.warning("Attempt %d failed for url %s: %s", attempt, url, err)
+                if attempt == self.max_retries:
+                    logger.error("Max retries reached. Network operation failed.")
+                    raise err
+                
+                time.sleep(delay)
+                delay *= self.backoff_factor
+        
+        return {}
