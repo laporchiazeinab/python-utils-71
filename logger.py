@@ -1,40 +1,31 @@
 import logging
 import os
-from datetime import datetime
+import sys
 
-# Configure logger for autoclicker runtime tracking
-logger = logging.getLogger('autoclicker')
-logger.setLevel(logging.INFO)
+def setup_logger(name: str = 'autoclicker', log_file: str = 'app.log'):
+    """Configures a robust logger with file rotation support."""
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler('app.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-def safe_log_action(message: str):
-    """Logs user actions with filesystem boundary checks."""
     try:
-        if not isinstance(message, str):
-            raise ValueError('Log message must be a string')
-        
-        # Verify log directory integrity
-        if not os.path.exists('app.log') and not os.access('.', os.W_OK):
-            print(f'CRITICAL: Cannot write log to disk: {message}')
-            return
-        
-        logger.info(message)
-    except (OSError, ValueError) as e:
-        # Fail silently to avoid interrupting click loop
-        print(f'Logger failure: {e}')
+        # Ensure directory existence
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
 
-def log_exception(exc: Exception):
-    """Formats and records exceptions for debug persistence."""
-    timestamp = datetime.now().isoformat()
-    error_msg = f'[{timestamp}] CRITICAL ERROR: {type(exc).__name__} - {str(exc)}'
-    
-    try:
-        with open('error.log', 'a') as f:
-            f.write(error_msg + '\n')
-    except Exception:
-        # Last-resort console fallback for critical disk errors
-        print(f'Fatal error logger failure: {error_msg}')
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+    except (PermissionError, OSError) as e:
+        # Fallback to console if file access is restricted
+        print(f"Warning: Could not create log file at {log_file}: {e}", file=sys.stderr)
+        stream_handler = logging.StreamHandler(sys.stderr)
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
+    return logger
+
+# Global instance for autoclicker module
+logger = setup_logger()
