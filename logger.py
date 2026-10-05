@@ -1,34 +1,38 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
+import sys
+from datetime import datetime
 
-def setup_logger(name='autoclicker', log_file='app.log', level=logging.INFO):
-    """
-    Configures a rotating file logger for the autoclicker process.
-    Keeps 5 files of 1MB each.
-    """
+def setup_logger(name: str, log_file: str = "autoclicker.log", level: int = logging.INFO) -> logging.Logger:
+    """Configures a standardized logger for the application."""
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
     # Prevent duplicate handlers if re-initialized
     if not logger.handlers:
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
         )
 
-        # Rotate logs after 1MB, keeping max 5 backups
-        file_handler = RotatingFileHandler(
-            log_file, maxBytes=1*1024*1024, backupCount=5
-        )
+        # File handler for persistent logs
+        file_handler = logging.FileHandler(log_file)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-        # Stream logs to console as well
-        console_handler = logging.StreamHandler()
+        # Stream handler for console output
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
     return logger
 
-# Instance for global application usage
-app_logger = setup_logger()
+def log_event(logger: logging.Logger, message: str, level: str = "info") -> None:
+    """Helper to dispatch logs based on priority level."""
+    levels = {
+        "info": logger.info,
+        "warning": logger.warning,
+        "error": logger.error,
+        "debug": logger.debug
+    }
+    log_func = levels.get(level.lower(), logger.info)
+    log_func(message)
