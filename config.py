@@ -1,32 +1,34 @@
-from typing import Dict, Any, Optional
 import json
+import os
+from typing import Any, Dict
 
-class ConfigManager:
-    """Handles loading and saving of autoclicker settings."""
+DEFAULT_CONFIG = {
+    "interval": 0.1,
+    "button": "left",
+    "repeat": 0,
+    "hotkey": "f6"
+}
 
-    def __init__(self, filepath: str = "settings.json") -> None:
-        self.filepath: str = filepath
-        self.settings: Dict[str, Any] = {
-            "interval": 0.1,
-            "button": "left",
-            "hotkey": "f6"
-        }
+def load_config(file_path: str = "config.json") -> Dict[str, Any]:
+    """Loads configuration from JSON file or returns defaults."""
+    config = DEFAULT_CONFIG.copy()
+    
+    if not os.path.exists(file_path):
+        return config
+        
+    try:
+        with open(file_path, "r") as f:
+            user_config = json.load(f)
+            config.update(user_config)
+    except (json.JSONDecodeError, IOError):
+        pass
+        
+    return config
 
-    def load_config(self) -> Dict[str, Any]:
-        """Reads configuration from a JSON file."""
-        try:
-            with open(self.filepath, "r") as f:
-                self.settings.update(json.load(f))
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
-        return self.settings
-
-    def save_config(self, new_settings: Dict[str, Any]) -> None:
-        """Persists updated configuration to disk."""
-        self.settings.update(new_settings)
-        with open(self.filepath, "w") as f:
-            json.dump(self.settings, f, indent=4)
-
-    def get_setting(self, key: str, default: Optional[Any] = None) -> Any:
-        """Retrieves a specific setting value."""
-        return self.settings.get(key, default)
+def save_config(config: Dict[str, Any], file_path: str = "config.json") -> None:
+    """Saves configuration dictionary to a JSON file."""
+    try:
+        with open(file_path, "w") as f:
+            json.dump(config, f, indent=4)
+    except IOError as e:
+        print(f"Failed to save configuration: {e}")
