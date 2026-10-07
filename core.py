@@ -1,34 +1,38 @@
 import time
-import functools
+import pyautogui
 import logging
-from typing import Callable, Any
+from typing import Optional
 
-# Configure logger for autoclicker networking
-logger = logging.getLogger('python-utils-71')
+class AutoClicker:
+    """Core logic for automated mouse interaction."""
 
-def retry_operation(retries: int = 3, delay: float = 1.0):
-    """Decorator to retry network operations on failure."""
-    def decorator(func: Callable):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
-            last_exception = None
-            for attempt in range(retries):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    last_exception = e
-                    logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                    if attempt < retries - 1:
-                        time.sleep(delay)
-            logger.error(f"Operation failed after {retries} attempts")
-            raise last_exception
-        return wrapper
-    return decorator
+    def __init__(self, interval: float = 0.1, button: str = 'left'):
+        self.interval = interval
+        self.button = button
+        self.is_running = False
+        logging.basicConfig(level=logging.INFO)
 
-@retry_operation(retries=3, delay=2.0)
-def fetch_server_config(url: str):
-    """Example network call for autoclicker settings."""
-    # Simulating request logic
-    import urllib.request
-    with urllib.request.urlopen(url, timeout=5) as response:
-        return response.read().decode('utf-8')
+    def start(self, duration: Optional[int] = None):
+        """Executes click loop for set duration or indefinitely."""
+        self.is_running = True
+        start_time = time.time()
+        logging.info(f"Starting clicker: {self.button} every {self.interval}s")
+        
+        try:
+            while self.is_running:
+                pyautogui.click(button=self.button)
+                time.sleep(self.interval)
+                
+                if duration and (time.time() - start_time) > duration:
+                    break
+        except KeyboardInterrupt:
+            self.stop()
+
+    def stop(self):
+        """Halts current click execution."""
+        self.is_running = False
+        logging.info("Stopping clicker")
+
+if __name__ == "__main__":
+    bot = AutoClicker(interval=0.5)
+    bot.start(duration=10)
