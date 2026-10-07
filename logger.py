@@ -1,38 +1,33 @@
 import logging
-import sys
-from datetime import datetime
+from logging.handlers import RotatingFileHandler
+import os
 
-def setup_logger(name: str, log_file: str = "autoclicker.log", level: int = logging.INFO) -> logging.Logger:
-    """Configures a standardized logger for the application."""
+def setup_logger(name='autoclicker', log_file='app.log'):
+    """
+    Configures a rotating file logger for the application.
+    Limits file size to 1MB and keeps 3 backups.
+    """
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if re-initialized
+    # Prevent duplicate handlers if function is called multiple times
     if not logger.handlers:
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
         )
 
-        # File handler for persistent logs
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        # Rotate logs at 1MB per file, max 3 files
+        handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=1*1024*1024, 
+            backupCount=3
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
-        # Stream handler for console output
-        console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
+        # Optional: Log to console as well
+        console = logging.StreamHandler()
+        console.setFormatter(formatter)
+        logger.addHandler(console)
 
     return logger
-
-def log_event(logger: logging.Logger, message: str, level: str = "info") -> None:
-    """Helper to dispatch logs based on priority level."""
-    levels = {
-        "info": logger.info,
-        "warning": logger.warning,
-        "error": logger.error,
-        "debug": logger.debug
-    }
-    log_func = levels.get(level.lower(), logger.info)
-    log_func(message)
