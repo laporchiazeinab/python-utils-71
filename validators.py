@@ -1,38 +1,57 @@
-import re
-from typing import Dict, Any, Optional
+"""Click configuration validation utilities for autoclicker application."""
 
-def validate_click_config(config: Dict[str, Any]) -> bool:
-    """Validates autoclicker configuration parameters for range and type."""
-    required_keys = {"interval": float, "clicks": int, "button": str}
-    
-    # Check for missing keys
-    if not all(key in config for key in required_keys):
-        return False
+from typing import Any, Dict, Optional, Tuple
 
-    # Validate data types
-    for key, expected_type in required_keys.items():
-        if not isinstance(config[key], expected_type):
-            return False
+VALID_BUTTONS = {"left", "right", "middle"}
 
-    # Validate business logic bounds
-    if config["interval"] < 0.001:
-        return False
-    if config["clicks"] < -1:
-        return False
-    
-    valid_buttons = {"left", "right", "middle"}
-    if config["button"] not in valid_buttons:
-        return False
 
-    return True
+def validate_cps(cps: float) -> float:
+    """Validate clicks-per-second value within a safe range."""
+    cps_float = float(cps)
+    if cps_float <= 0 or cps_float > 1000:
+        raise ValueError("CPS must be greater than 0 and at most 1000")
+    return round(cps_float, 2)
 
-def sanitize_hotkey_string(hotkey: str) -> Optional[str]:
-    """Sanitizes and normalizes hotkey input strings."""
-    if not isinstance(hotkey, str):
-        return None
-    
-    cleaned = re.sub(r'[^a-zA-Z0-9+]', '', hotkey).lower()
-    if not cleaned:
-        return None
-        
-    return cleaned
+
+def validate_coordinates(
+    coords: Tuple[int, int], screen_bounds: Optional[Tuple[int, int]] = None
+) -> Tuple[int, int]:
+    """Validate target click screen coordinates."""
+    x, y = int(coords[0]), int(coords[1])
+    if x < 0 or y < 0:
+        raise ValueError("Screen coordinates must be non-negative integers")
+
+    if screen_bounds:
+        max_x, max_y = screen_bounds
+        if x > max_x or y > max_y:
+            raise ValueError(f"Coordinates ({x}, {y}) exceed bounds ({max_x}, {max_y})")
+
+    return (x, y)
+
+
+def validate_click_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate complete autoclicker configuration dictionary."""
+    if not isinstance(config, dict):
+        raise TypeError("Configuration must be a dictionary")
+
+    validated = {}
+
+    cps = config.get("cps", 10.0)
+    validated["cps"] = validate_cps(cps)
+
+    button = str(config.get("button", "left")).lower()
+    if button not in VALID_BUTTONS:
+        raise ValueError(f"Invalid mouse button: {button}. Must be one of {VALID_BUTTONS}")
+    validated["button"] = button
+
+    if "coords" in config and config["coords"] is not None:
+        validated["coords"] = validate_coordinates(config["coords"])
+    else:
+        validated["coords"] = None
+
+    repeat = config.get("repeat", 0)
+    if not isinstance(repeat, int) or repeat < 0:
+        raise ValueError("Repeat count must be a non-negative integer")
+    validated["repeat"] = repeat
+
+    return validated
