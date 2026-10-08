@@ -1,54 +1,52 @@
 # python-utils-71
 
-A high-performance, cross-platform autoclicker library and CLI tool built with Python. Designed for automation tasks, testing, and repetitive workflows, it provides low-latency input simulation with minimal resource overhead.
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+
+`python-utils-71` is a high-precision, multi-threaded autoclicker designed for rapid automation tasks and input testing in Python. Built on top of native system input hooks, it delivers sub-millisecond click execution alongside configurable anti-detection algorithms.
 
 ## Features
 
-*   **Precision Control:** Configurable click intervals (milliseconds) and mouse button selection (left, right, middle).
-*   **Dynamic Targeting:** Supports both coordinate-based clicking and instant "follow-cursor" automation modes.
-*   **Safety Interlocks:** Includes an emergency keyboard hotkey to instantly kill automation processes if needed.
-*   **Cross-Platform:** Built on top of `pynput` for seamless operation across Windows, macOS, and Linux.
+- **Microsecond Precision Execution**: Multi-threaded click loops capable of reaching up to 1,000 clicks per second with minimal CPU overhead.
+- **Human Emulation Mode**: Configurable gaussian jitter for click intervals and pixel coordinates to simulate organic user input.
+- **Global Hotkey Intercepts**: Instant toggle controls listening across all active OS windows using native OS-level listeners.
+- **Multi-Target Pattern Sequences**: Record and loop coordinate macros with specific click types (Left, Right, Middle, or Double Click).
 
 ## Installation
 
-Ensure you have Python 3.8+ installed. Clone the repository and install the required dependencies:
+Install the package directly from GitHub using `pip`:
 
 ```bash
 git clone https://github.com/Developer/python-utils-71.git
 cd python-utils-71
 pip install -r requirements.txt
+python setup.py install
 ```
 
-## Usage
+## Basic Usage
 
-You can run the autoclicker directly via the command line or import it into your own scripts.
+Run the autoclicker programmatically within your script:
 
-### CLI Execution
-Run the script with default settings (100ms interval):
-```bash
-python main.py --interval 100 --button left
-```
-
-### Python API Example
 ```python
-from utils import AutoClicker
+from python_utils_71 import AutoClicker, Button
 
-# Initialize with a 50ms delay
-bot = AutoClicker(interval=0.05)
+# Initialize clicker with a 10ms delay and organic jitter
+clicker = AutoClicker(
+    button=Button.LEFT,
+    interval=0.01,
+    jitter=0.002,
+    toggle_key="f8"
+)
 
-# Start clicking at the current cursor position
-bot.start()
-
-# Stop after 10 seconds
-import time
-time.sleep(10)
-bot.stop()
+# Start background listener for the hotkey
+clicker.start()
 ```
 
-## Contributing
-Contributions are welcome! Please open an issue to discuss major changes before submitting a pull request. Ensure all new code passes existing unit tests.
+Alternatively, launch the CLI directly:
+
+```bash
+python -m python_utils_71 --interval 0.05 --button left --hotkey f8
+```
 
 ## License
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
