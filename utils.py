@@ -2,26 +2,28 @@ import time
 import functools
 import logging
 
+# Logger setup for the utility module
 logger = logging.getLogger(__name__)
 
-def retry(max_attempts=3, delay=1.0, exceptions=(Exception,)):
-    """Decorator to retry network functions with exponential backoff."""
+def retry_network_operation(max_retries=3, delay=1.0, backoff=2):
+    """
+    Decorator for retrying network operations with exponential backoff.
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            attempts = 0
             current_delay = delay
-            while attempts < max_attempts:
+            for attempt in range(max_retries):
                 try:
                     return func(*args, **kwargs)
-                except exceptions as e:
-                    attempts += 1
-                    if attempts == max_attempts:
+                except (ConnectionError, TimeoutError) as e:
+                    if attempt == max_retries - 1:
                         logger.error(f"Final attempt failed for {func.__name__}: {e}")
                         raise
                     
-                    logger.warning(f"Attempt {attempts} failed for {func.__name__}. Retrying in {current_delay}s...")
+                    logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {current_delay}s...")
                     time.sleep(current_delay)
-                    current_delay *= 2
+                    current_delay *= backoff
+            return None
         return wrapper
     return decorator
