@@ -1,38 +1,31 @@
-import time
 import pyautogui
-import logging
-from typing import Optional
+import time
+import random
 
-class AutoClicker:
-    """Core logic for automated mouse interaction."""
+def safe_click(x: int, y: int, interval: float = 0.1):
+    """Performs a click with randomized jitter to simulate human input."""
+    jitter_x = x + random.randint(-2, 2)
+    jitter_y = y + random.randint(-2, 2)
+    pyautogui.click(jitter_x, jitter_y)
+    time.sleep(interval)
 
-    def __init__(self, interval: float = 0.1, button: str = 'left'):
-        self.interval = interval
-        self.button = button
-        self.is_running = False
-        logging.basicConfig(level=logging.INFO)
+def perform_sequence(coords: list, delay: float = 0.5):
+    """Executes a list of coordinates sequentially."""
+    for x, y in coords:
+        safe_click(x, y)
+        time.sleep(delay)
 
-    def start(self, duration: Optional[int] = None):
-        """Executes click loop for set duration or indefinitely."""
-        self.is_running = True
-        start_time = time.time()
-        logging.info(f"Starting clicker: {self.button} every {self.interval}s")
-        
-        try:
-            while self.is_running:
-                pyautogui.click(button=self.button)
-                time.sleep(self.interval)
-                
-                if duration and (time.time() - start_time) > duration:
-                    break
-        except KeyboardInterrupt:
-            self.stop()
+def get_screen_center():
+    """Calculates the center of the primary screen."""
+    width, height = pyautogui.size()
+    return width // 2, height // 2
 
-    def stop(self):
-        """Halts current click execution."""
-        self.is_running = False
-        logging.info("Stopping clicker")
+def rapid_click(count: int, interval: float = 0.05):
+    """Clicks at the current mouse position multiple times."""
+    for _ in range(count):
+        pyautogui.click()
+        time.sleep(interval)
 
-if __name__ == "__main__":
-    bot = AutoClicker(interval=0.5)
-    bot.start(duration=10)
+def wait_random(min_sec: float, max_sec: float):
+    """Pauses execution for a random duration to prevent detection."""
+    time.sleep(random.uniform(min_sec, max_sec))
