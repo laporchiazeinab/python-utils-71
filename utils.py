@@ -1,29 +1,30 @@
-import time
-import functools
-import logging
+import json
+import os
+from typing import Dict, Any
 
-# Logger setup for the utility module
-logger = logging.getLogger(__name__)
+def load_clicker_profile(filepath: str) -> Dict[str, Any]:
+    """Reads and parses clicker settings from a JSON file."""
+    if not os.path.exists(filepath):
+        return {"interval": 0.1, "button": "left", "loop": True}
+    
+    with open(filepath, 'r') as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
 
-def retry_network_operation(max_retries=3, delay=1.0, backoff=2):
-    """
-    Decorator for retrying network operations with exponential backoff.
-    """
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            current_delay = delay
-            for attempt in range(max_retries):
-                try:
-                    return func(*args, **kwargs)
-                except (ConnectionError, TimeoutError) as e:
-                    if attempt == max_retries - 1:
-                        logger.error(f"Final attempt failed for {func.__name__}: {e}")
-                        raise
-                    
-                    logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}, retrying in {current_delay}s...")
-                    time.sleep(current_delay)
-                    current_delay *= backoff
-            return None
-        return wrapper
-    return decorator
+def save_clicker_profile(filepath: str, data: Dict[str, Any]) -> bool:
+    """Persists clicker settings to disk safely."""
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
+        return True
+    except IOError:
+        return False
+
+def validate_click_settings(settings: Dict[str, Any]) -> bool:
+    """Checks integrity of click interval and constraints."""
+    interval = settings.get("interval", 0.0)
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        return False
+    return settings.get("button") in ["left", "right", "middle"]
