@@ -1,28 +1,35 @@
 import logging
 
-# Configure logger for module
+# Configure logger for input validation
 logger = logging.getLogger(__name__)
 
-def validate_click_params(interval: float, iterations: int) -> bool:
-    """Validates autoclicker configuration parameters."""
+def validate_click_params(interval, repeat):
+    """Ensures click parameters are within safe ranges."""
     try:
-        if not isinstance(interval, (int, float)) or interval < 0.01:
-            logger.error(f"Invalid interval: {interval}. Must be >= 0.01s")
-            return False
+        # Verify interval is a positive number
+        interval_float = float(interval)
+        if interval_float < 0.01:
+            logger.warning("Interval too low, defaulting to 0.01s")
+            interval_float = 0.01
         
-        if not isinstance(iterations, int) or (iterations < -1):
-            logger.error(f"Invalid iterations: {iterations}. Must be >= -1")
-            return False
+        # Verify repeat count is valid
+        repeat_int = int(repeat)
+        if repeat_int < -1:
+            raise ValueError("Repeat count must be -1 for infinite or >= 0")
             
-        return True
-    except Exception as e:
-        logger.exception(f"Unexpected validation error: {e}")
-        return False
+        return interval_float, repeat_int
+    except (ValueError, TypeError) as e:
+        logger.error(f"Invalid configuration detected: {e}")
+        return 0.1, 1
 
-def sanitize_input(value: str) -> str:
-    """Ensures input strings are stripped and safe for parsing."""
-    return str(value).strip()
-
-# Main loop integration example usage snippet:
-# if not validate_click_params(interval, count):
-#     raise ValueError("Configuration failed validation checks")
+def validate_coordinates(x, y):
+    """Checks if provided screen coordinates are logical."""
+    try:
+        x_val, y_val = int(x), int(y)
+        if x_val < 0 or y_val < 0:
+            logger.warning("Negative coordinates clamped to zero")
+            return max(0, x_val), max(0, y_val)
+        return x_val, y_val
+    except (ValueError, TypeError):
+        logger.error("Non-numeric coordinates provided, defaulting to 0,0")
+        return 0, 0
