@@ -1,26 +1,27 @@
 class AutoclickerError(Exception):
-    """Base exception for the autoclicker project."""
+    """Base exception class for all autoclicker modules."""
     pass
+
+class ClickError(AutoclickerError):
+    """Raised when a mouse event cannot be processed."""
+    def __init__(self, message: str, button: str) -> None:
+        super().__init__(f"{message} (button: {button})")
+        self.button = button
 
 class ConfigurationError(AutoclickerError):
-    """Raised when the config file is missing or malformed."""
-    pass
+    """Raised when settings are invalid or missing."""
+    def __init__(self, key: str, reason: str) -> None:
+        super().__init__(f"Invalid configuration for '{key}': {reason}")
+        self.key = key
 
-class ClickerExecutionError(AutoclickerError):
-    """Raised when clicking operations fail due to hardware or OS."""
-    pass
+class DeviceNotFoundError(AutoclickerError):
+    """Raised when the input device is disconnected."""
+    def __init__(self, device_id: str) -> None:
+        super().__init__(f"Device {device_id} not found or unreachable")
+        self.device_id = device_id
 
-class HardwareInputError(ClickerExecutionError):
-    """Raised when simulated input fails to register."""
-    pass
-
-def validate_os_support(platform_name: str):
-    """Check if current OS is supported by the clicker."""
-    supported = ['windows', 'linux', 'darwin']
-    if platform_name.lower() not in supported:
-        raise ConfigurationError(f"OS '{platform_name}' is not supported.")
-
-def handle_critical_failure(e: Exception):
-    """Standardized exit procedure for fatal application errors."""
-    print(f"[FATAL] {type(e).__name__}: {e}")
-    exit(1)
+class ExecutionTimeoutError(AutoclickerError):
+    """Raised when a clicking operation exceeds expected duration."""
+    def __init__(self, timeout: float) -> None:
+        super().__init__(f"Operation timed out after {timeout} seconds")
+        self.timeout = timeout
