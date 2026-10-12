@@ -1,43 +1,28 @@
-import json
-import os
-from typing import Dict, Any
+import time
+import pyautogui
+import random
 
-class ClickConfigHandler:
-    """Handles loading and saving of autoclicker profiles."""
+def perform_click(x: int, y: int, interval: float = 0.0) -> None:
+    """Executes a mouse click at specified coordinates."""
+    pyautogui.click(x, y)
+    if interval > 0:
+        time.sleep(interval)
 
-    def __init__(self, filepath: str = "config.json"):
-        self.filepath = filepath
+def perform_random_move(x_range: tuple, y_range: tuple) -> None:
+    """Moves mouse to random coordinates within provided ranges."""
+    target_x = random.randint(x_range[0], x_range[1])
+    target_y = random.randint(y_range[0], y_range[1])
+    pyautogui.moveTo(target_x, target_y, duration=0.2)
 
-    def load_profile(self) -> Dict[str, Any]:
-        """Loads autoclicker settings from disk."""
-        if not os.path.exists(self.filepath):
-            return self._get_defaults()
-        
-        try:
-            with open(self.filepath, 'r') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return self._get_defaults()
+def safe_exit_check(key: str = 'q') -> bool:
+    """Checks for user exit signal during loop execution."""
+    try:
+        import keyboard
+        return keyboard.is_pressed(key)
+    except ImportError:
+        return False
 
-    def save_profile(self, data: Dict[str, Any]) -> bool:
-        """Persists autoclicker settings to disk."""
-        try:
-            with open(self.filepath, 'w') as f:
-                json.dump(data, f, indent=4)
-            return True
-        except IOError:
-            return False
-
-    def _get_defaults(self) -> Dict[str, Any]:
-        """Default configuration for autoclicker runtime."""
-        return {
-            "interval": 0.1,
-            "button": "left",
-            "repeat": 0,
-            "randomize": False
-        }
-
-def validate_click_data(data: Dict[str, Any]) -> bool:
-    """Ensures configuration values are within safe bounds."""
-    interval = data.get("interval", 0.1)
-    return isinstance(interval, (int, float)) and interval > 0
+def delay_execution(base: float, jitter: float = 0.1) -> None:
+    """Pauses execution with randomized jitter for human-like behavior."""
+    sleep_time = base + random.uniform(-jitter, jitter)
+    time.sleep(max(0, sleep_time))
