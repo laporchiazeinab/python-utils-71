@@ -1,27 +1,33 @@
 class AutoclickerError(Exception):
-    """Base exception class for all autoclicker modules."""
+    """Base exception for the autoclicker module."""
     pass
 
-class ClickError(AutoclickerError):
-    """Raised when a mouse event cannot be processed."""
-    def __init__(self, message: str, button: str) -> None:
-        super().__init__(f"{message} (button: {button})")
-        self.button = button
+class ClickExecutionError(AutoclickerError):
+    """Raised when the OS level click operation fails."""
+    pass
+
+class HardwareInputError(AutoclickerError):
+    """Raised when hardware input simulation is restricted."""
+    pass
 
 class ConfigurationError(AutoclickerError):
-    """Raised when settings are invalid or missing."""
-    def __init__(self, key: str, reason: str) -> None:
-        super().__init__(f"Invalid configuration for '{key}': {reason}")
-        self.key = key
+    """Raised when autoclicker parameters are invalid."""
+    pass
 
-class DeviceNotFoundError(AutoclickerError):
-    """Raised when the input device is disconnected."""
-    def __init__(self, device_id: str) -> None:
-        super().__init__(f"Device {device_id} not found or unreachable")
-        self.device_id = device_id
+class PerformanceThresholdError(AutoclickerError):
+    """Raised when internal timing cycles exceed latency limits."""
+    pass
 
-class ExecutionTimeoutError(AutoclickerError):
-    """Raised when a clicking operation exceeds expected duration."""
-    def __init__(self, timeout: float) -> None:
-        super().__init__(f"Operation timed out after {timeout} seconds")
-        self.timeout = timeout
+def raise_if_slow(latency: float, threshold: float = 0.016):
+    """Performance check to ensure frame timing stays under 16ms."""
+    if latency > threshold:
+        raise PerformanceThresholdError(f"Cycle latency {latency:.4f}s exceeded {threshold}s limit")
+
+class ErrorHandler:
+    """Centralized error handling for performance-critical execution loops."""
+    @staticmethod
+    def handle(e: Exception):
+        if isinstance(e, PerformanceThresholdError):
+            print(f"[PERF WARNING] {e}")
+        else:
+            print(f"[CRITICAL ERROR] {type(e).__name__}: {e}")
