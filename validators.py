@@ -1,35 +1,26 @@
-import logging
+import re
 
-# Configure logger for input validation
-logger = logging.getLogger(__name__)
+def validate_coordinate(x: int, y: int) -> bool:
+    """Ensures mouse coordinates are within typical screen bounds."""
+    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
 
-def validate_click_params(interval, repeat):
-    """Ensures click parameters are within safe ranges."""
-    try:
-        # Verify interval is a positive number
-        interval_float = float(interval)
-        if interval_float < 0.01:
-            logger.warning("Interval too low, defaulting to 0.01s")
-            interval_float = 0.01
-        
-        # Verify repeat count is valid
-        repeat_int = int(repeat)
-        if repeat_int < -1:
-            raise ValueError("Repeat count must be -1 for infinite or >= 0")
-            
-        return interval_float, repeat_int
-    except (ValueError, TypeError) as e:
-        logger.error(f"Invalid configuration detected: {e}")
-        return 0.1, 1
+def validate_interval(interval: float) -> bool:
+    """Checks if the click interval is physically realistic."""
+    return isinstance(interval, (int, float)) and interval >= 0.01
 
-def validate_coordinates(x, y):
-    """Checks if provided screen coordinates are logical."""
-    try:
-        x_val, y_val = int(x), int(y)
-        if x_val < 0 or y_val < 0:
-            logger.warning("Negative coordinates clamped to zero")
-            return max(0, x_val), max(0, y_val)
-        return x_val, y_val
-    except (ValueError, TypeError):
-        logger.error("Non-numeric coordinates provided, defaulting to 0,0")
-        return 0, 0
+def validate_key_binding(key: str) -> bool:
+    """Verifies key string matches basic keyboard character standards."""
+    return bool(re.match(r'^[a-zA-Z0-9]$', str(key)))
+
+def sanitize_input(value: str) -> str:
+    """Removes whitespace and forces lowercase for config parsing."""
+    return str(value).strip().lower()
+
+def validate_config_value(key: str, value: any) -> bool:
+    """Routes values to specific validators based on key name."""
+    validators = {
+        'interval': validate_interval,
+        'trigger_key': validate_key_binding
+    }
+    validator = validators.get(key)
+    return validator(value) if validator else True
