@@ -1,46 +1,35 @@
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
-from typing import Optional
 
-def setup_logger(
-    name: str = "autoclicker",
-    log_file: Optional[str] = "logs/autoclicker.log",
-    max_bytes: int = 1_048_576,
-    backup_count: int = 3,
-    level: int = logging.INFO
-) -> logging.Logger:
-    """Configures and returns a logger instance with rotating file and console handlers."""
+def setup_logger(name: str, log_file: str = 'autoclicker.log') -> logging.Logger:
+    """Initializes a rotating file logger for the application."""
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if logger is initialized multiple times
-    if logger.hasHandlers():
-        return logger
-
-    formatter = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    # Console handler for real-time autoclicker feedback
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
-    # Rotating file handler for session logs
-    if log_file:
+    # Prevent duplicate handlers if logger is re-initialized
+    if not logger.handlers:
+        # Ensure logs directory exists
         log_dir = os.path.dirname(log_file)
-        if log_dir:
-            os.makedirs(log_dir, exist_ok=True)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
 
-        file_handler = RotatingFileHandler(
-            log_file,
-            maxBytes=max_bytes,
-            backupCount=backup_count,
-            encoding="utf-8"
+        # Rotation: 1MB per file, keep 3 backup files
+        handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=1 * 1024 * 1024, 
+            backupCount=3
         )
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
+        
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        # Optional: Add console stream for development visibility
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
     return logger
