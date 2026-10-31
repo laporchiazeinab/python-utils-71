@@ -1,33 +1,43 @@
-class AutoclickerError(Exception):
-    """Base exception for the autoclicker module."""
+"""Custom exceptions for autoclicker configuration and execution handling."""
+
+import time
+from typing import Optional, Any
+
+
+class AutoClickerError(Exception):
+    """Base exception class for all autoclicker errors."""
+
+    def __init__(self, message: str, details: Optional[Any] = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.details = details
+        self.timestamp = time.time()
+
+    def to_dict(self) -> dict:
+        """Convert exception metadata to a dictionary for logging."""
+        return {
+            "error": self.__class__.__name__,
+            "message": self.message,
+            "details": self.details,
+            "timestamp": self.timestamp,
+        }
+
+
+class InvalidConfigurationError(AutoClickerError):
+    """Raised when click intervals, targets, or settings are invalid."""
     pass
 
-class ClickExecutionError(AutoclickerError):
-    """Raised when the OS level click operation fails."""
+
+class TargetNotFoundError(AutoClickerError):
+    """Raised when standard screen target or pixel condition is not met."""
     pass
 
-class HardwareInputError(AutoclickerError):
-    """Raised when hardware input simulation is restricted."""
+
+class HotkeyConflictError(AutoClickerError):
+    """Raised when hotkey binding fails or collides with system bindings."""
     pass
 
-class ConfigurationError(AutoclickerError):
-    """Raised when autoclicker parameters are invalid."""
+
+class ExecutionPermissionError(AutoClickerError):
+    """Raised when OS blocks automated mouse or keyboard event injection."""
     pass
-
-class PerformanceThresholdError(AutoclickerError):
-    """Raised when internal timing cycles exceed latency limits."""
-    pass
-
-def raise_if_slow(latency: float, threshold: float = 0.016):
-    """Performance check to ensure frame timing stays under 16ms."""
-    if latency > threshold:
-        raise PerformanceThresholdError(f"Cycle latency {latency:.4f}s exceeded {threshold}s limit")
-
-class ErrorHandler:
-    """Centralized error handling for performance-critical execution loops."""
-    @staticmethod
-    def handle(e: Exception):
-        if isinstance(e, PerformanceThresholdError):
-            print(f"[PERF WARNING] {e}")
-        else:
-            print(f"[CRITICAL ERROR] {type(e).__name__}: {e}")
