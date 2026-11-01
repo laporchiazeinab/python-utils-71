@@ -1,33 +1,33 @@
 import logging
-import os
 from logging.handlers import RotatingFileHandler
+import os
 
-def setup_logger(name: str, log_file: str = 'autoclicker.log') -> logging.Logger:
-    """Initializes a rotating file logger for the application."""
+# Logger configuration for autoclicker tracking
+LOG_FILE = "autoclicker.log"
+MAX_BYTES = 1 * 1024 * 1024  # 1MB per file
+BACKUP_COUNT = 3
+
+def setup_logger(name: str = "python-utils-71") -> logging.Logger:
+    """Configures a rotating file logger for session tracking."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
 
-    # Prevent duplicate handlers if logger is re-initialized
+    # Prevent duplicate handlers if re-initialized
     if not logger.handlers:
-        # Ensure logs directory exists
-        log_dir = os.path.dirname(log_file)
-        if log_dir and not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-
-        # Rotation: 1MB per file, keep 3 backup files
-        handler = RotatingFileHandler(
-            log_file, 
-            maxBytes=1 * 1024 * 1024, 
-            backupCount=3
-        )
-        
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
 
-        # Optional: Add console stream for development visibility
+        # File handler with rotation logic
+        file_handler = RotatingFileHandler(
+            LOG_FILE, 
+            maxBytes=MAX_BYTES, 
+            backupCount=BACKUP_COUNT
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+        # Optional console output for debugging
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
