@@ -1,26 +1,34 @@
-import re
+import logging
 
-def validate_coordinate(x: int, y: int) -> bool:
-    """Ensures mouse coordinates are within typical screen bounds."""
-    return isinstance(x, int) and isinstance(y, int) and x >= 0 and y >= 0
+def validate_click_params(interval: float, duration: float) -> bool:
+    """Ensures click parameters are within realistic hardware limits."""
+    logger = logging.getLogger('python-utils-71')
+    
+    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
+        logger.error("Invalid type: interval and duration must be numeric")
+        return False
+        
+    if interval < 0.01:
+        logger.warning("Interval too low, clamping to 0.01s to prevent system freeze")
+        return False
+        
+    if duration < 0:
+        logger.error("Duration cannot be negative")
+        return False
+        
+    return True
 
-def validate_interval(interval: float) -> bool:
-    """Checks if the click interval is physically realistic."""
-    return isinstance(interval, (int, float)) and interval >= 0.01
+def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
+    """Checks if coordinates fall within active screen bounds."""
+    logger = logging.getLogger('python-utils-71')
+    
+    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
+        logger.error(f"Coordinates ({x}, {y}) out of screen bounds")
+        return False
+        
+    return True
 
-def validate_key_binding(key: str) -> bool:
-    """Verifies key string matches basic keyboard character standards."""
-    return bool(re.match(r'^[a-zA-Z0-9]$', str(key)))
-
-def sanitize_input(value: str) -> str:
-    """Removes whitespace and forces lowercase for config parsing."""
-    return str(value).strip().lower()
-
-def validate_config_value(key: str, value: any) -> bool:
-    """Routes values to specific validators based on key name."""
-    validators = {
-        'interval': validate_interval,
-        'trigger_key': validate_key_binding
-    }
-    validator = validators.get(key)
-    return validator(value) if validator else True
+def validate_input_config(config: dict) -> bool:
+    """General validation for configuration dictionaries."""
+    required = ['interval', 'duration', 'x', 'y']
+    return all(key in config for key in required)
