@@ -1,43 +1,33 @@
-"""Custom exceptions for autoclicker configuration and execution handling."""
-
 import time
-from typing import Optional, Any
+import functools
+import logging
 
+logger = logging.getLogger(__name__)
 
-class AutoClickerError(Exception):
-    """Base exception class for all autoclicker errors."""
-
-    def __init__(self, message: str, details: Optional[Any] = None) -> None:
-        super().__init__(message)
-        self.message = message
-        self.details = details
-        self.timestamp = time.time()
-
-    def to_dict(self) -> dict:
-        """Convert exception metadata to a dictionary for logging."""
-        return {
-            "error": self.__class__.__name__,
-            "message": self.message,
-            "details": self.details,
-            "timestamp": self.timestamp,
-        }
-
-
-class InvalidConfigurationError(AutoClickerError):
-    """Raised when click intervals, targets, or settings are invalid."""
+class NetworkRetryError(Exception):
+    """Custom exception for network operation failures."""
     pass
 
-
-class TargetNotFoundError(AutoClickerError):
-    """Raised when standard screen target or pixel condition is not met."""
-    pass
-
-
-class HotkeyConflictError(AutoClickerError):
-    """Raised when hotkey binding fails or collides with system bindings."""
-    pass
-
-
-class ExecutionPermissionError(AutoClickerError):
-    """Raised when OS blocks automated mouse or keyboard event injection."""
-    pass
+def retry_network_operation(max_retries=3, delay=1.0):
+    """Decorator to implement exponential backoff for network functions."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            current_delay = delay
+            
+            for attempt in range(1, max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    logger.warning(f"Attempt {attempt} failed for {func.__name__}: {e}")
+                    if attempt < max_retries:
+                        time.sleep(current_delay)
+                        current_delay *= 2
+            
+            logger.error(f"Function {func.__name__} failed after {max_retries} attempts")
+            raise NetworkRetryError(f"Failed after {max_retries} retries") from last_exception
+            
+        return wrapper
+    return decorator
