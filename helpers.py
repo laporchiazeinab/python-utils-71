@@ -1,64 +1,40 @@
-import random
-import re
+import logging
+import pyautogui
 
-def parse_interval(interval_str: str) -> float:
+# Configure logging for autoclicker runtime errors
+logger = logging.getLogger('autoclicker')
+
+def safe_click(x: int, y: int):
     """
-    Parses a human-readable interval string and returns duration in seconds.
-
-    Supported formats: "100ms", "1.5s", "500". If no unit is specified,
-    it defaults to seconds.
-
-    Args:
-        interval_str: The interval string to parse (e.g., '250ms', '2s').
-
-    Returns:
-        The duration in seconds as a float.
-
-    Raises:
-        ValueError: If the interval string cannot be parsed.
+    Executes a click at screen coordinates with bounds checking
+    and failure handling to prevent automation crashes.
     """
-    match = re.match(r"^([\d.]+)\s*(ms|s)?$", interval_str.strip().lower())
-    if not match:
-        raise ValueError(f"Invalid interval format: {interval_str}")
+    try:
+        screen_width, screen_height = pyautogui.size()
+        
+        # Validate coordinates are within the primary monitor range
+        if not (0 <= x < screen_width and 0 <= y < screen_height):
+            logger.error(f"Coordinates ({x}, {y}) out of bounds")
+            return False
 
-    value_str, unit = match.groups()
-    value = float(value_str)
+        # Fail-safe: if pyautogui mouse moves to corner, it raises a FailSafeException
+        pyautogui.click(x=x, y=y)
+        return True
+        
+    except pyautogui.FailSafeException:
+        logger.critical("Fail-safe triggered: mouse moved to corner")
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error during click execution: {e}")
+        return False
 
-    if unit == "ms":
-        return value / 1000.0
-    return value
-
-
-def calculate_jitter(base_delay: float, jitter_range: float) -> float:
+def get_valid_interval(interval: float, min_val: float = 0.01) -> float:
     """
-    Applies a random delay variation (jitter) to make clicking behavior more human-like.
-
-    Args:
-        base_delay: The baseline delay between clicks in seconds.
-        jitter_range: The maximum deviation percentage as a float (e.g., 0.1 for 10%).
-
-    Returns:
-        The final delay in seconds including random jitter.
+    Ensures click interval is within safe performance limits
+    to prevent system resource exhaustion.
     """
-    if jitter_range <= 0:
-        return max(0.0, base_delay)
-
-    max_deviation = base_delay * jitter_range
-    actual_deviation = random.uniform(-max_deviation, max_deviation)
-    return max(0.0, base_delay + actual_deviation)
-
-
-def validate_coordinate(x: int, y: int, max_x: int, max_y: int) -> bool:
-    """
-    Validates if target click coordinates fall within safe screen boundaries.
-
-    Args:
-        x: The horizontal pixel coordinate.
-        y: The vertical pixel coordinate.
-        max_x: The maximum allowable screen width resolution.
-        max_y: The maximum allowable screen height resolution.
-
-    Returns:
-        True if coordinates are within [0, max_dimension], False otherwise.
-    """
-    return 0 <= x <= max_x and 0 <= y <= max_y
+    try:
+        return max(float(interval), min_val)
+    except (ValueError, TypeError):
+        logger.warning(f"Invalid interval {interval}, defaulting to {min_val}")
+        return min_val
