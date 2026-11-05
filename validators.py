@@ -1,34 +1,43 @@
-import logging
+from typing import Any, Dict, Tuple
 
-def validate_click_params(interval: float, duration: float) -> bool:
-    """Ensures click parameters are within realistic hardware limits."""
-    logger = logging.getLogger('python-utils-71')
+
+def validate_click_interval(interval: float, min_interval: float = 0.001) -> float:
+    """Validate and clamp the click interval in seconds."""
+    if not isinstance(interval, (int, float)):
+        raise TypeError("Interval must be a numeric value.")
+    if interval < min_interval:
+        raise ValueError(f"Interval cannot be less than {min_interval} seconds.")
+    return float(interval)
+
+
+def validate_coordinates(coords: Tuple[int, int], screen_size: Tuple[int, int] = (3840, 2160)) -> Tuple[int, int]:
+    """Ensure x and y coordinates fall within screen boundaries."""
+    if not isinstance(coords, (tuple, list)) or len(coords) != 2:
+        raise TypeError("Coordinates must be a tuple or list of (x, y).")
+    x, y = coords
+    if not (isinstance(x, int) and isinstance(y, int)):
+        raise TypeError("Coordinate values must be integers.")
+    max_w, max_h = screen_size
+    if not (0 <= x <= max_w and 0 <= y <= max_h):
+        raise ValueError(f"Coordinates ({x}, {y}) out of screen bounds [0-{max_w}, 0-{max_h}].")
+    return (x, y)
+
+
+def validate_profile_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate autoclicker profile data dictionary."""
+    required = {"click_type", "interval", "repeat_count"}
+    missing = required - set(config.keys())
+    if missing:
+        raise KeyError(f"Missing required profile keys: {', '.join(missing)}")
     
-    if not isinstance(interval, (int, float)) or not isinstance(duration, (int, float)):
-        logger.error("Invalid type: interval and duration must be numeric")
-        return False
-        
-    if interval < 0.01:
-        logger.warning("Interval too low, clamping to 0.01s to prevent system freeze")
-        return False
-        
-    if duration < 0:
-        logger.error("Duration cannot be negative")
-        return False
-        
-    return True
-
-def validate_coordinates(x: int, y: int, screen_width: int, screen_height: int) -> bool:
-    """Checks if coordinates fall within active screen bounds."""
-    logger = logging.getLogger('python-utils-71')
+    valid_buttons = {"left", "right", "middle"}
+    if config["click_type"] not in valid_buttons:
+        raise ValueError(f"Invalid click_type. Must be one of {valid_buttons}")
     
-    if not (0 <= x <= screen_width and 0 <= y <= screen_height):
-        logger.error(f"Coordinates ({x}, {y}) out of screen bounds")
-        return False
+    validate_click_interval(config["interval"])
+    
+    repeat = config["repeat_count"]
+    if not isinstance(repeat, int) or repeat < 0:
+        raise ValueError("repeat_count must be a non-negative integer.")
         
-    return True
-
-def validate_input_config(config: dict) -> bool:
-    """General validation for configuration dictionaries."""
-    required = ['interval', 'duration', 'x', 'y']
-    return all(key in config for key in required)
+    return config
