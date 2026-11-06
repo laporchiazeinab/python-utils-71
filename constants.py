@@ -1,46 +1,33 @@
-"""Constants and configuration defaults for the autoclicker module."""
+import platform
 
-from typing import Dict, Final, Tuple
+# Application configuration constants
+APP_NAME = "python-utils-71"
+VERSION = "1.0.0"
 
-# Click rate bounds (clicks per second)
-MIN_CPS: Final[float] = 0.1
-MAX_CPS: Final[float] = 1000.0
-DEFAULT_CPS: Final[float] = 10.0
+# Click simulation constants
+DEFAULT_INTERVAL = 0.1  # Seconds between clicks
+MIN_INTERVAL = 0.01
+MAX_INTERVAL = 10.0
 
-# Supported mouse input buttons
-BUTTON_LEFT: Final[str] = "left"
-BUTTON_RIGHT: Final[str] = "right"
-BUTTON_MIDDLE: Final[str] = "middle"
-VALID_BUTTONS: Final[Tuple[str, ...]] = (BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE)
+# Coordinate system definitions
+SCREEN_WIDTH = 1920
+SCREEN_HEIGHT = 1080
 
-# Click operation trigger modes
-MODE_HOLD: Final[str] = "hold"
-MODE_TOGGLE: Final[str] = "toggle"
-MODE_BURST: Final[str] = "burst"
-VALID_MODES: Final[Tuple[str, ...]] = (MODE_HOLD, MODE_TOGGLE, MODE_BURST)
+# Key identifiers for input control
+START_KEY = 'f8'
+STOP_KEY = 'f9'
+EXIT_KEY = 'esc'
 
-# Default keyboard shortcut keybindings
-DEFAULT_HOTKEYS: Final[Dict[str, str]] = {
-    "start_stop": "F6",
-    "toggle_hold": "F7",
-    "emergency_stop": "Escape",
-}
+# Operating system identification
+IS_WINDOWS = platform.system() == "Windows"
+IS_MACOS = platform.system() == "Darwin"
+IS_LINUX = platform.system() == "Linux"
 
-# Burst mode defaults
-DEFAULT_BURST_COUNT: Final[int] = 5
-MAX_BURST_COUNT: Final[int] = 500
+# Data handling constants for autoclicker profiles
+PROFILE_DIR = "./profiles"
+DEFAULT_CONFIG_FILE = "config.json"
 
-
-def get_default_config() -> Dict[str, object]:
-    """Generate a dictionary containing standard autoclicker default settings.
-
-    Returns:
-        Dict[str, object]: A fresh dictionary of default settings.
-    """
-    return {
-        "cps": DEFAULT_CPS,
-        "button": BUTTON_LEFT,
-        "mode": MODE_TOGGLE,
-        "burst_count": DEFAULT_BURST_COUNT,
-        "hotkeys": DEFAULT_HOTKEYS.copy(),
-    }
+# Error codes for exception handling
+ERR_INVALID_COORDINATES = 1001
+ERR_PERMISSION_DENIED = 1002
+ERR_CONFIG_LOAD_FAILURE = 1003
