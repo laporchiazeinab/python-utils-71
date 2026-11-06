@@ -1,40 +1,37 @@
 import time
-import urllib.request
-import urllib.error
-import json
 import logging
 
-logger = logging.getLogger("autoclicker.processor")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class NetworkProcessor:
-    """Handles network requests for autoclicker configurations with retry logic."""
+def validate_click_params(interval, iterations):
+    """Ensures click settings are within safe operational bounds."""
+    if not isinstance(interval, (int, float)) or interval < 0.01:
+        raise ValueError("Interval must be a float/int >= 0.01 seconds")
+    if not isinstance(iterations, int) or iterations < 0:
+        raise ValueError("Iterations must be a non-negative integer")
+    return True
 
-    def __init__(self, max_retries: int = 3, backoff_factor: float = 2.0):
-        self.max_retries = max_retries
-        self.backoff_factor = backoff_factor
-
-    def fetch_remote_profile(self, url: str) -> dict:
-        """
-        Retrieves a clicking coordinate profile configuration from a remote endpoint.
-        Applies exponential backoff for handling intermittent connection failures.
-        """
-        delay = 1.0
-        for attempt in range(1, self.max_retries + 1):
-            try:
-                req = urllib.request.Request(
-                    url,
-                    headers={"User-Agent": "Autoclicker-Processor/1.0"}
-                )
-                with urllib.request.urlopen(req, timeout=5.0) as response:
-                    if response.status == 200:
-                        return json.loads(response.read().decode("utf-8"))
-            except (urllib.error.URLError, urllib.error.HTTPError) as err:
-                logger.warning("Attempt %d failed for url %s: %s", attempt, url, err)
-                if attempt == self.max_retries:
-                    logger.error("Max retries reached. Network operation failed.")
-                    raise err
-                
-                time.sleep(delay)
-                delay *= self.backoff_factor
+def run_autoclicker(interval, iterations):
+    """Main processing loop with input validation."""
+    try:
+        validate_click_params(interval, iterations)
+        logger.info(f"Starting autoclicker: {iterations} clicks at {interval}s interval")
         
-        return {}
+        count = 0
+        while iterations == 0 or count < iterations:
+            # Simulate mouse click action
+            logger.debug(f"Click action triggered: {count + 1}")
+            time.sleep(interval)
+            count += 1
+            
+        logger.info("Process completed successfully")
+    except ValueError as e:
+        logger.error(f"Validation failed: {e}")
+    except KeyboardInterrupt:
+        logger.info("Process terminated by user")
+    except Exception as e:
+        logger.error(f"Unexpected loop error: {e}")
+
+if __name__ == "__main__":
+    run_autoclicker(0.5, 10)
